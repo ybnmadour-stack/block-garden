@@ -66,3 +66,8 @@ dialog button {
   filter: drop-shadow(0 8px 10px #174c7855);
 }
 .drag-ghost .mini { border-radius: 7px; }
+.mode-bar { display:flex; align-items:center; gap:10px; margin-top:16px; padding:12px; border:1px solid #ffffffb3; border-radius:14px; background:#ffffff40; }
+.mode-bar label { font-size:9px; letter-spacing:1px; color:#35658b; }
+.mode-bar select { flex:1; min-width:0; border:0; border-radius:8px; padding:8px 4px; background:#ffffff66; color:#123e66; font:inherit; font-size:12px; }
+#timer { font-size:22px; font-variant-numeric:tabular-nums; color:#154c7b; }
+#timer.urgent { color:#a32148; }

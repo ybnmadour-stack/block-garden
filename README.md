@@ -19,6 +19,8 @@ After the first successful cache, the game can load offline. Best score is saved
 
 ## Play
 
+Choose Classic for untimed play, or 5-minute challenge to start a five-minute countdown immediately. Switching modes or restarting begins a new round. The clock keeps running while the tab is in the background. Time running out or having no legal placements ends the challenge. Each mode saves its own best score on this browser; there is no shared online leaderboard.
+
 Drag a piece onto the board, or select a piece then tap the board. Your chosen square anchors the top-left of its shape. Complete rows or columns to clear them. Each placed square earns one point, each cleared line earns 20, and each extra line in a move earns 10 bonus points. Use all three pieces to receive a fresh set. The game ends when none of the remaining pieces fit.
 
 When updating offline assets, increment the cache version in sw.js. No paid service or API is required to run or host this game using public GitHub Pages.

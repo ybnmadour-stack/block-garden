@@ -15,6 +15,37 @@ let gameVersion = 0;
 let clearAnimations = [];
 let dragGhost = null;
 let suppressClick = false;
+let mode = 'classic';
+let deadline = null;
+let timerInterval = null;
+let ended = false;
+const timerElement = document.querySelector('#timer');
+function bestKey() { return mode === 'timed' ? 'block-garden-timed-best' : 'block-garden-best'; }
+function updateTimer() {
+  if (deadline === null || ended) return;
+  const seconds = Math.max(0,Math.ceil((deadline - Date.now()) / 1000));
+  timerElement.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2,'0')}`;
+  timerElement.classList.toggle('urgent',seconds <= 30);
+  if (!seconds) finish('Time’s up!');
+}
+function finish(title) {
+  if (ended) return;
+  ended = true;
+  clearInterval(timerInterval);
+  gameVersion++;
+  for (const animation of clearAnimations) animation.cancel();
+  clearAnimations = [];
+  clearing = false;
+  gesture = null;
+  selected = null;
+  removeGhost();
+  render();
+  document.querySelector('#final-score').textContent = score;
+  dialog.querySelector('h2').textContent = title;
+  dialog.querySelector('.eyebrow').textContent = mode === 'timed' ? '5-MINUTE CHALLENGE' : 'A LOVELY LITTLE RUN';
+  statusElement.textContent = `${title} Final score: ${score}.`;
+  if (!dialog.open) dialog.showModal();
+}
 document.addEventListener('click',event => {
   if (!suppressClick) return;
   suppressClick = false;
@@ -31,6 +62,7 @@ function render() {
     const cell = document.createElement('button');
     cell.className = `cell${color ? ' filled' : ''}`;
     cell.dataset.index = index;
+    cell.disabled = ended;
     cell.setAttribute('aria-label',`Row ${Math.floor(index / SIZE) + 1}, column ${index % SIZE + 1}, ${color ? 'occupied' : 'empty'}`);
     if (color) cell.style.setProperty('--block',color);
     cell.addEventListener('click',() => drop(index));
@@ -39,7 +71,7 @@ function render() {
   trayElement.replaceChildren(...pieces.map((piece,index) => {
     const button = document.createElement('button');
     button.className = `piece${selected === index ? ' selected' : ''}`;
-    button.disabled = !piece || clearing;
+    button.disabled = !piece || clearing || ended;
     button.setAttribute('aria-pressed',String(selected === index));
     button.setAttribute('aria-label',piece ? `Block ${index + 1}, ${piece.shape.length} squares. Select then choose its top-left position on the board.` : 'Block already placed');
     if (piece) {
@@ -57,7 +89,8 @@ function render() {
       button.append(grid);
       button.addEventListener('click',() => select(index));
       button.addEventListener('pointerdown',event => {
-        if (clearing || gesture || event.button !== 0) return;
+        updateTimer();
+        if (ended || clearing || gesture || event.button !== 0) return;
         suppressClick = false;
         button.setPointerCapture(event.pointerId);
         gesture = {index,pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,moved:false,grid,offset:event.pointerType === 'touch' ? 65 : 0};
@@ -69,7 +102,8 @@ function render() {
   document.querySelector('#best').textContent = best;
 }
 function select(index) {
-  if (clearing || !pieces[index]) return;
+  updateTimer();
+  if (ended || clearing || !pieces[index]) return;
   selected = index;
   statusElement.textContent = 'Tap where the block’s top-left corner should go.';
   render();
@@ -143,7 +177,8 @@ document.addEventListener('pointerup',event => {
 });
 document.addEventListener('pointercancel',() => { gesture = null; removeGhost(); clearPreview(); });
 async function drop(index) {
-  if (clearing) return;
+  updateTimer();
+  if (ended || clearing) return;
   if (selected === null || !pieces[selected]) { statusElement.textContent = 'Choose one of the blocks below first.'; return; }
   const piece = pieces[selected];
   const result = place(board,piece.shape,Math.floor(index / SIZE),index % SIZE,piece.color);
@@ -152,7 +187,7 @@ async function drop(index) {
   board = result.lines ? result.beforeClear : result.board;
   score += result.points;
   best = Math.max(best,score);
-  try { localStorage.setItem('block-garden-best',String(best)); } catch {}
+  try { localStorage.setItem(bestKey(),String(best)); } catch {}
   pieces[selected] = null;
   selected = null;
   clearing = result.lines > 0;
@@ -184,11 +219,19 @@ async function drop(index) {
   if (pieces.every(piece => !piece)) refill();
   render();
   if (!pieces.some(piece => piece && canPlay(board,piece.shape))) {
-    document.querySelector('#final-score').textContent = score;
-    dialog.showModal();
+    finish('Garden full!');
   }
 }
 function restart() {
+  clearInterval(timerInterval);
+  ended = false;
+  deadline = mode === 'timed' ? Date.now() + 5 * 60 * 1000 : null;
+  best = 0;
+  try { best = Number(localStorage.getItem(bestKey())) || 0; } catch {}
+  timerElement.hidden = mode !== 'timed';
+  timerElement.classList.remove('urgent');
+  timerElement.textContent = '5:00';
+  document.querySelector('footer span').textContent = mode === 'timed' ? 'Five minutes. Highest score wins. No moves ends the round early.' : 'No timer. Just one more piece.';
   removeGhost();
   gameVersion++;
   for (const animation of clearAnimations) animation.cancel();
@@ -200,11 +243,14 @@ function restart() {
   gesture = null;
   if (dialog.open) dialog.close();
   refill();
-  statusElement.textContent = 'Pick a block, then tap the board — or drag it.';
+  statusElement.textContent = mode === 'timed' ? 'Clock is running! Beat your five-minute best score.' : 'Pick a block, then tap the board — or drag it.';
   render();
+  if (mode === 'timed') timerInterval = setInterval(updateTimer,250);
 }
 document.querySelector('#restart').addEventListener('click',restart);
 document.querySelector('#again').addEventListener('click',restart);
+document.querySelector('#mode').addEventListener('change',event => { mode = event.target.value; restart(); });
+document.addEventListener('visibilitychange',updateTimer);
 restart();
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange',() => {
