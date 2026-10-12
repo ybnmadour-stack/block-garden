@@ -19,6 +19,45 @@ let mode = 'classic';
 let deadline = null;
 let timerInterval = null;
 let ended = false;
+let hasGame = false;
+let screen = 'home';
+let preferences = {theme:'daylight',motion:'auto',liftBlocks:true};
+try {
+  const saved = JSON.parse(localStorage.getItem('block-garden-settings'));
+  if (saved) {
+    if (['daylight','starlight'].includes(saved.theme)) preferences.theme = saved.theme;
+    if (['auto','full','reduced'].includes(saved.motion)) preferences.motion = saved.motion;
+    if (typeof saved.liftBlocks === 'boolean') preferences.liftBlocks = saved.liftBlocks;
+  }
+} catch {}
+const settingsDialog = document.querySelector('#settings');
+function applyPreferences() {
+  document.documentElement.dataset.theme = preferences.theme;
+  document.querySelector('meta[name="theme-color"]').content = preferences.theme === 'starlight' ? '#0d1735' : '#b8e3ff';
+  document.querySelector('#theme-setting').value = preferences.theme;
+  document.querySelector('#motion-setting').value = preferences.motion;
+  document.querySelector('#drag-setting').checked = preferences.liftBlocks;
+  try { localStorage.setItem('block-garden-settings',JSON.stringify(preferences)); } catch {}
+}
+function showScreen(nextScreen) {
+  screen = nextScreen;
+  document.querySelector('#home-screen').hidden = screen !== 'home';
+  document.querySelector('#play-screen').hidden = screen !== 'play';
+  document.querySelector('#home-button').hidden = screen === 'home';
+  if (screen === 'home') {
+    gesture = null;
+    removeGhost();
+    clearPreview();
+    document.querySelector('#continue-game').hidden = !hasGame || ended;
+    document.querySelector('#continue-description').textContent = `${mode === 'timed' ? '5-minute challenge · Clock keeps running' : 'Classic'} · Score ${score}`;
+    for (const gameMode of ['classic','timed']) {
+      let savedBest = 0;
+      try { savedBest = Number(localStorage.getItem(gameMode === 'timed' ? 'block-garden-timed-best' : 'block-garden-best')) || 0; } catch {}
+      document.querySelector(`#${gameMode}-best`).textContent = `Best: ${savedBest}`;
+    }
+    document.querySelector('#home-title').focus();
+  }
+}
 const timerElement = document.querySelector('#timer');
 function bestKey() { return mode === 'timed' ? 'block-garden-timed-best' : 'block-garden-best'; }
 function updateTimer() {
@@ -31,6 +70,7 @@ function updateTimer() {
 function finish(title) {
   if (ended) return;
   ended = true;
+  if (settingsDialog.open) settingsDialog.close();
   clearInterval(timerInterval);
   gameVersion++;
   for (const animation of clearAnimations) animation.cancel();
@@ -40,6 +80,7 @@ function finish(title) {
   selected = null;
   removeGhost();
   render();
+  if (screen === 'home') showScreen('home');
   document.querySelector('#final-score').textContent = score;
   dialog.querySelector('h2').textContent = title;
   dialog.querySelector('.eyebrow').textContent = mode === 'timed' ? '5-MINUTE CHALLENGE' : 'A LOVELY LITTLE RUN';
@@ -90,10 +131,10 @@ function render() {
       button.addEventListener('click',() => select(index));
       button.addEventListener('pointerdown',event => {
         updateTimer();
-        if (ended || clearing || gesture || event.button !== 0) return;
+        if (screen !== 'play' || ended || clearing || gesture || event.button !== 0) return;
         suppressClick = false;
         button.setPointerCapture(event.pointerId);
-        gesture = {index,pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,moved:false,grid,offset:event.pointerType === 'touch' ? 65 : 0};
+        gesture = {index,pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,moved:false,grid,offset:event.pointerType === 'touch' && preferences.liftBlocks ? 65 : 0};
       });
     }
     return button;
@@ -103,7 +144,7 @@ function render() {
 }
 function select(index) {
   updateTimer();
-  if (ended || clearing || !pieces[index]) return;
+  if (screen !== 'play' || ended || clearing || !pieces[index]) return;
   selected = index;
   statusElement.textContent = 'Tap where the block’s top-left corner should go.';
   render();
@@ -178,7 +219,7 @@ document.addEventListener('pointerup',event => {
 document.addEventListener('pointercancel',() => { gesture = null; removeGhost(); clearPreview(); });
 async function drop(index) {
   updateTimer();
-  if (ended || clearing) return;
+  if (screen !== 'play' || ended || clearing) return;
   if (selected === null || !pieces[selected]) { statusElement.textContent = 'Choose one of the blocks below first.'; return; }
   const piece = pieces[selected];
   const result = place(board,piece.shape,Math.floor(index / SIZE),index % SIZE,piece.color);
@@ -195,7 +236,7 @@ async function drop(index) {
   statusElement.textContent = result.lines ? `${result.lines > 1 ? 'Beautiful combo!' : 'Room to grow!'} +${result.points} points` : 'Lovely. Find a home for the next block.';
   render();
   if (clearing) {
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reducedMotion = preferences.motion === 'reduced' || (preferences.motion === 'auto' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     clearAnimations = result.cleared.map((cellIndex,order) => {
       const cell = boardElement.children[cellIndex];
       cell.style.backgroundImage = 'none';
@@ -223,6 +264,9 @@ async function drop(index) {
   }
 }
 function restart() {
+  hasGame = true;
+  showScreen('play');
+  document.querySelector('#mode-label').textContent = mode === 'timed' ? '5-minute challenge' : 'Classic · No timer';
   clearInterval(timerInterval);
   ended = false;
   deadline = mode === 'timed' ? Date.now() + 5 * 60 * 1000 : null;
@@ -249,9 +293,18 @@ function restart() {
 }
 document.querySelector('#restart').addEventListener('click',restart);
 document.querySelector('#again').addEventListener('click',restart);
-document.querySelector('#mode').addEventListener('change',event => { mode = event.target.value; restart(); });
+document.querySelector('#end-home').addEventListener('click',() => { dialog.close(); showScreen('home'); });
+document.querySelectorAll('[data-start-mode]').forEach(button => button.addEventListener('click',() => { mode = button.dataset.startMode; restart(); }));
+document.querySelector('#home-button').addEventListener('click',() => showScreen('home'));
+document.querySelector('#continue-game').addEventListener('click',() => { updateTimer(); if (!ended) showScreen('play'); });
+document.querySelector('#settings-button').addEventListener('click',() => settingsDialog.showModal());
+document.querySelector('#close-settings').addEventListener('click',() => settingsDialog.close());
+document.querySelector('#theme-setting').addEventListener('change',event => { preferences.theme = event.target.value; applyPreferences(); });
+document.querySelector('#motion-setting').addEventListener('change',event => { preferences.motion = event.target.value; applyPreferences(); });
+document.querySelector('#drag-setting').addEventListener('change',event => { preferences.liftBlocks = event.target.checked; applyPreferences(); });
 document.addEventListener('visibilitychange',updateTimer);
-restart();
+applyPreferences();
+showScreen('home');
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange',() => {
     statusElement.textContent = 'Update ready! Refresh once to load the latest game.';
