@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {fits,place,canPlay} from './engine.js';
+import {fits,place,canPlay,drawShapes} from './engine.js';
 test('rejects overlap and pieces wrapping over an edge',() => {
   const board = Array(64).fill(null);
   board[0] = 'green';
@@ -49,4 +49,23 @@ test('keeps placed squares occupied until their entire row or column clears',() 
     assert.equal(result.board[63],'purple');
     assert.equal(fits(result.board,[[0,0]],0,0),true);
   }
+});
+test('difficulty increases average block size and all shapes fit an empty board',() => {
+  const board = Array(64).fill(null);
+  const averages = ['easy','hard','impossible'].map(difficulty => {
+    const shapes = Array.from({length:100},(_,index) => drawShapes(board,difficulty,() => (index + 0.5) / 100)).flat();
+    assert.ok(shapes.every(shape => canPlay(board,shape)));
+    if (difficulty === 'easy') assert.ok(shapes.every(shape => shape.length <= 4));
+    if (difficulty === 'impossible') assert.ok(shapes.every(shape => shape.length >= 5));
+    return shapes.reduce((total,shape) => total + shape.length,0) / shapes.length;
+  });
+  assert.ok(averages[0] < averages[1]);
+  assert.ok(averages[1] < averages[2]);
+});
+test('easy offers fitting pieces while harder levels do not provide rescue blocks',() => {
+  const board = Array(64).fill('blue');
+  board[0] = null;
+  assert.ok(drawShapes(board,'easy').every(shape => shape.length === 1 && canPlay(board,shape)));
+  for (const difficulty of ['hard','impossible']) assert.ok(drawShapes(board,difficulty).every(shape => !canPlay(board,shape)));
+  assert.deepEqual(drawShapes(Array(64).fill('blue'),'easy'),[]);
 });

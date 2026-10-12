@@ -1,4 +1,4 @@
-import {SIZE,SHAPES,fits,canPlay,place} from './engine.js';
+import {SIZE,DIFFICULTIES,drawShapes,fits,canPlay,place} from './engine.js';
 const colors = ['#42a5ed','#75c8f5','#648fe0','#5bb5db','#9aacf0'];
 const boardElement = document.querySelector('#board');
 const trayElement = document.querySelector('#tray');
@@ -16,6 +16,7 @@ let clearAnimations = [];
 let dragGhost = null;
 let suppressClick = false;
 let mode = 'classic';
+let difficulty = 'easy';
 let deadline = null;
 let timerInterval = null;
 let ended = false;
@@ -49,17 +50,19 @@ function showScreen(nextScreen) {
     removeGhost();
     clearPreview();
     document.querySelector('#continue-game').hidden = !hasGame || ended;
-    document.querySelector('#continue-description').textContent = `${mode === 'timed' ? '5-minute challenge · Clock keeps running' : 'Classic'} · Score ${score}`;
+    document.querySelector('#continue-description').textContent = `${mode === 'timed' ? '5-minute challenge · Clock keeps running' : 'Classic'} · ${DIFFICULTIES[difficulty].label} · Score ${score}`;
+    const chosenDifficulty = document.querySelector('#difficulty').value;
+    document.querySelector('#difficulty-description').textContent = DIFFICULTIES[chosenDifficulty].description;
     for (const gameMode of ['classic','timed']) {
       let savedBest = 0;
-      try { savedBest = Number(localStorage.getItem(gameMode === 'timed' ? 'block-garden-timed-best' : 'block-garden-best')) || 0; } catch {}
-      document.querySelector(`#${gameMode}-best`).textContent = `Best: ${savedBest}`;
+      try { savedBest = Number(localStorage.getItem(bestKey(gameMode,chosenDifficulty))) || 0; } catch {}
+      document.querySelector(`#${gameMode}-best`).textContent = `${DIFFICULTIES[chosenDifficulty].label} best: ${savedBest}`;
     }
     document.querySelector('#home-title').focus();
   }
 }
 const timerElement = document.querySelector('#timer');
-function bestKey() { return mode === 'timed' ? 'block-garden-timed-best' : 'block-garden-best'; }
+function bestKey(gameMode = mode,gameDifficulty = difficulty) { return `block-garden-best-${gameMode}-${gameDifficulty}`; }
 function updateTimer() {
   if (deadline === null || ended) return;
   const seconds = Math.max(0,Math.ceil((deadline - Date.now()) / 1000));
@@ -83,7 +86,7 @@ function finish(title) {
   if (screen === 'home') showScreen('home');
   document.querySelector('#final-score').textContent = score;
   dialog.querySelector('h2').textContent = title;
-  dialog.querySelector('.eyebrow').textContent = mode === 'timed' ? '5-MINUTE CHALLENGE' : 'A LOVELY LITTLE RUN';
+  dialog.querySelector('.eyebrow').textContent = `${mode === 'timed' ? '5-MINUTE CHALLENGE' : 'CLASSIC'} · ${DIFFICULTIES[difficulty].label.toUpperCase()}`;
   statusElement.textContent = `${title} Final score: ${score}.`;
   if (!dialog.open) dialog.showModal();
 }
@@ -95,8 +98,7 @@ document.addEventListener('click',event => {
 },true);
 try { best = Number(localStorage.getItem('block-garden-best')) || 0; } catch {}
 function refill() {
-  pieces = Array.from({length:3},() => ({shape:SHAPES[Math.floor(Math.random() * SHAPES.length)],color:colors[Math.floor(Math.random() * colors.length)]}));
-  if (!pieces.some(piece => canPlay(board,piece.shape)) && board.some(value => !value)) pieces[0] = {shape:SHAPES[0],color:colors[0]};
+  pieces = drawShapes(board,difficulty).map(shape => ({shape,color:colors[Math.floor(Math.random() * colors.length)]}));
 }
 function render() {
   boardElement.replaceChildren(...board.map((color,index) => {
@@ -266,7 +268,7 @@ async function drop(index) {
 function restart() {
   hasGame = true;
   showScreen('play');
-  document.querySelector('#mode-label').textContent = mode === 'timed' ? '5-minute challenge' : 'Classic · No timer';
+  document.querySelector('#mode-label').textContent = `${mode === 'timed' ? '5-minute challenge' : 'Classic'} · ${DIFFICULTIES[difficulty].label}`;
   clearInterval(timerInterval);
   ended = false;
   deadline = mode === 'timed' ? Date.now() + 5 * 60 * 1000 : null;
@@ -294,7 +296,8 @@ function restart() {
 document.querySelector('#restart').addEventListener('click',restart);
 document.querySelector('#again').addEventListener('click',restart);
 document.querySelector('#end-home').addEventListener('click',() => { dialog.close(); showScreen('home'); });
-document.querySelectorAll('[data-start-mode]').forEach(button => button.addEventListener('click',() => { mode = button.dataset.startMode; restart(); }));
+document.querySelectorAll('[data-start-mode]').forEach(button => button.addEventListener('click',() => { mode = button.dataset.startMode; difficulty = document.querySelector('#difficulty').value; restart(); }));
+document.querySelector('#difficulty').addEventListener('change',() => showScreen('home'));
 document.querySelector('#home-button').addEventListener('click',() => showScreen('home'));
 document.querySelector('#continue-game').addEventListener('click',() => { updateTimer(); if (!ended) showScreen('play'); });
 document.querySelector('#settings-button').addEventListener('click',() => settingsDialog.showModal());

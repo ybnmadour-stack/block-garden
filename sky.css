@@ -72,6 +72,12 @@ dialog button {
 #timer { font-size:22px; font-variant-numeric:tabular-nums; color:#154c7b; }
 #timer.urgent { color:#a32148; }
 [hidden] { display:none !important; }
+.difficulty-picker { text-align:left; padding:15px 18px; margin-bottom:20px; border:1px solid #ffffffb3; border-radius:16px; background:#ffffff40; }
+.difficulty-picker label { font-size:10px; letter-spacing:2px; font-weight:700; }
+.difficulty-picker select { float:right; min-width:130px; padding:7px 10px; border-radius:9px; border:1px solid #78acd266; background:#ffffff80; color:#123e66; font:inherit; font-size:13px; }
+.difficulty-picker p { clear:both; padding-top:12px; margin:0; font-size:12px; line-height:1.6; }
+[data-theme="starlight"] .difficulty-picker { background:#a9bbff15; border-color:#c1d4ff38; color:#c8d8f4; }
+[data-theme="starlight"] .difficulty-picker select { background:#172645; color:#e2ecff; border-color:#b7cfff40; }
 .navigation { display:flex; justify-content:space-between; gap:10px; margin:0 0 18px; }
 .navigation button { background:#ffffff55; border:1px solid #ffffffb3; color:#28577c; border-radius:12px; padding:10px 15px; font-size:12px; }
 #settings-button { margin-left:auto; }

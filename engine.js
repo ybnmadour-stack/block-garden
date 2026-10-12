@@ -1,5 +1,34 @@
 export const SIZE = 8;
 export const SHAPES = [ [[0,0]], [[0,0],[0,1]], [[0,0],[1,0]], [[0,0],[0,1],[0,2]], [[0,0],[1,0],[2,0]], [[0,0],[0,1],[1,0],[1,1]], [[0,0],[1,0],[2,0],[2,1]], [[0,1],[1,1],[2,0],[2,1]], [[0,0],[0,1],[0,2],[1,1]], [[0,1],[0,2],[1,0],[1,1]], [[0,0],[0,1],[0,2],[0,3]], [[0,0],[1,0],[2,0],[3,0]], [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2]] ];
+export const DIFFICULTIES = {
+  easy:{label:'Easy',description:'Smaller blocks, with pieces chosen to fit the available space.'},
+  hard:{label:'Hard',description:'Bigger blocks and no guaranteed fitting pieces. Plan ahead.'},
+  impossible:{label:'Impossible',description:'Only large, awkward shapes. No rescue pieces. A serious challenge.'}
+};
+const LARGE_SHAPES = [
+  [[0,0],[0,1],[0,2],[0,3],[0,4]],
+  [[0,0],[1,0],[2,0],[3,0],[4,0]],
+  [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]],
+  [[0,0],[0,1],[1,0],[1,1],[2,0],[2,1]],
+  [[0,0],[1,0],[2,0],[2,1],[2,2]],
+  [[0,0],[0,1],[0,2],[1,1],[2,1]],
+  [[0,0],[0,2],[1,0],[1,1],[1,2]],
+  SHAPES[12]
+];
+export function drawShapes(board,difficulty,random = Math.random) {
+  let pool;
+  if (difficulty === 'easy') {
+    pool = SHAPES.filter(shape => shape.length <= 4 && canPlay(board,shape));
+  } else if (difficulty === 'hard') {
+    pool = [...SHAPES.filter(shape => shape.length === 4),...LARGE_SHAPES.filter(shape => shape.length === 6),SHAPES[12]];
+  } else if (difficulty === 'impossible') {
+    pool = LARGE_SHAPES;
+  } else {
+    throw new Error('Unknown difficulty');
+  }
+  if (!pool.length) return [];
+  return Array.from({length:3},() => pool[Math.floor(random() * pool.length)]);
+}
 export function fits(board, shape, row, column) {
   return shape.every(([rowOffset,columnOffset]) => {
     const targetRow = row + rowOffset;

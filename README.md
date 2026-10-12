@@ -19,6 +19,8 @@ After the first successful cache, the game can load offline. Best score is saved
 
 ## Play
 
+Choose difficulty on Home before starting either mode. Easy draws only shapes of up to four squares that currently fit. Hard draws larger shapes of four, six, or nine squares without a fitting-piece guarantee. Impossible uses only awkward shapes of five to nine squares, with no rescue pieces. Every mode/difficulty pair has its own best-score record. Earlier pre-difficulty scores stay stored but are not mixed into these new records. Changing the home selector does not alter a continued round.
+
 The home screen lets you choose Classic or the five-minute challenge. Home preserves your current round within this tab; Continue returns to it. Reloading closes the current round. Choosing a mode starts a new round. The timed clock keeps running in menus.
 
 Settings offers Daylight glass blue or Starlight dark glass with a starry sky, animation preferences (device setting, full, reduced), and an option to lift touch-dragged blocks above your finger. Preferences are saved on this browser.
