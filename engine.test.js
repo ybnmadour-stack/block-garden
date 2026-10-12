@@ -1,0 +1,25 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {fits,place,canPlay} from './engine.js';
+test('rejects overlap and pieces wrapping over an edge',() => {
+  const board = Array(64).fill(null);
+  board[0] = 'green';
+  assert.equal(fits(board,[[0,0]],0,0),false);
+  assert.equal(fits(board,[[0,0],[0,1]],0,7),false);
+  assert.equal(place(board,[[0,0]],0,0,'gold'),null);
+});
+test('clears intersecting row and column simultaneously and scores both',() => {
+  const board = Array(64).fill(null);
+  for (let index = 1; index < 8; index++) { board[index] = 'green'; board[index * 8] = 'green'; }
+  const result = place(board,[[0,0]],0,0,'gold');
+  assert.equal(result.lines,2);
+  assert.equal(result.points,51);
+  assert.ok(result.board.every(cell => !cell));
+  assert.equal(board[1],'green');
+});
+test('detects when a piece has no legal placement',() => {
+  const board = Array(64).fill('green');
+  board[63] = null;
+  assert.equal(canPlay(board,[[0,0]]),true);
+  assert.equal(canPlay(board,[[0,0],[0,1]]),false);
+});
