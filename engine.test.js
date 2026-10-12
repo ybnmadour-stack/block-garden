@@ -23,3 +23,26 @@ test('detects when a piece has no legal placement',() => {
   assert.equal(canPlay(board,[[0,0]]),true);
   assert.equal(canPlay(board,[[0,0],[0,1]]),false);
 });
+test('rejects a partial overlap without changing any occupied squares',() => {
+  const board = Array(64).fill(null);
+  board[1] = 'green';
+  const before = [...board];
+  assert.equal(place(board,[[0,0],[0,1]],0,0,'gold'),null);
+  assert.deepEqual(board,before);
+});
+test('keeps placed squares occupied until their entire row or column clears',() => {
+  for (const vertical of [false,true]) {
+    let board = Array(64).fill(null);
+    board[63] = 'purple';
+    for (let position = 0; position < 7; position++) {
+      const result = place(board,[[0,0]],vertical ? position : 0,vertical ? 0 : position,'green');
+      assert.equal(result.lines,0);
+      board = result.board;
+      assert.equal(place(board,[[0,0]],0,0,'gold'),null);
+    }
+    const result = place(board,[[0,0]],vertical ? 7 : 0,vertical ? 0 : 7,'gold');
+    assert.equal(result.lines,1);
+    assert.equal(result.board[63],'purple');
+    assert.equal(fits(result.board,[[0,0]],0,0),true);
+  }
+});

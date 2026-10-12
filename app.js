@@ -61,7 +61,7 @@ function select(index) {
   render();
 }
 function clearPreview() {
-  for (const cell of boardElement.children) cell.classList.remove('preview','invalid');
+  for (const cell of boardElement.children) cell.classList.remove('preview','invalid','blocked');
 }
 function cellAt(clientX,clientY) {
   const bounds = boardElement.getBoundingClientRect();
@@ -81,10 +81,14 @@ document.addEventListener('pointermove',event => {
   const column = index % SIZE;
   const shape = pieces[selected].shape;
   const valid = fits(board,shape,row,column);
+  statusElement.textContent = valid ? 'Release to place your block.' : 'Space taken or outside the board. Try another spot.';
   for (const [rowOffset,columnOffset] of shape) {
     const targetRow = row + rowOffset;
     const targetColumn = column + columnOffset;
-    if (targetRow < SIZE && targetColumn < SIZE) boardElement.children[targetRow * SIZE + targetColumn].classList.add(valid ? 'preview' : 'invalid');
+    if (targetRow < SIZE && targetColumn < SIZE) {
+      const targetIndex = targetRow * SIZE + targetColumn;
+      boardElement.children[targetIndex].classList.add(board[targetIndex] ? 'blocked' : valid ? 'preview' : 'invalid');
+    }
   }
 });
 document.addEventListener('pointerup',event => {
@@ -105,7 +109,7 @@ function drop(index) {
   if (selected === null || !pieces[selected]) { statusElement.textContent = 'Choose one of the blocks below first.'; return; }
   const piece = pieces[selected];
   const result = place(board,piece.shape,Math.floor(index / SIZE),index % SIZE,piece.color);
-  if (!result) { statusElement.textContent = 'That spot is a little tight. Try another.'; return; }
+  if (!result) { statusElement.textContent = 'That block cannot fit here. Occupied squares stay taken until a full row or column clears.'; return; }
   board = result.board;
   score += result.points;
   best = Math.max(best,score);
