@@ -16,7 +16,12 @@ export function place(board, shape, row, column, color) {
   for (const [rowOffset,columnOffset] of shape) next[(row + rowOffset) * SIZE + column + columnOffset] = color;
   const rows = Array.from({length:SIZE},(_,index) => index).filter(targetRow => next.slice(targetRow * SIZE,targetRow * SIZE + SIZE).every(Boolean));
   const columns = Array.from({length:SIZE},(_,index) => index).filter(targetColumn => Array.from({length:SIZE},(_,targetRow) => next[targetRow * SIZE + targetColumn]).every(Boolean));
-  for (let index = 0; index < next.length; index++) if (rows.includes(Math.floor(index / SIZE)) || columns.includes(index % SIZE)) next[index] = null;
+  const beforeClear = [...next];
+  const cleared = [];
+  for (let index = 0; index < next.length; index++) if (rows.includes(Math.floor(index / SIZE)) || columns.includes(index % SIZE)) {
+    cleared.push(index);
+    next[index] = null;
+  }
   const lines = rows.length + columns.length;
-  return {board:next,points:shape.length + lines * 20 + Math.max(0,lines - 1) * 10,lines};
+  return {board:next,beforeClear,cleared,points:shape.length + lines * 20 + Math.max(0,lines - 1) * 10,lines};
 }

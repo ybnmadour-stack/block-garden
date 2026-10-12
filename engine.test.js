@@ -14,6 +14,10 @@ test('clears intersecting row and column simultaneously and scores both',() => {
   const result = place(board,[[0,0]],0,0,'gold');
   assert.equal(result.lines,2);
   assert.equal(result.points,51);
+  assert.equal(result.cleared.length,15);
+  assert.equal(new Set(result.cleared).size,15);
+  assert.equal(result.beforeClear[0],'gold');
+  assert.ok(result.cleared.every(index => result.beforeClear[index] && !result.board[index]));
   assert.ok(result.board.every(cell => !cell));
   assert.equal(board[1],'green');
 });
