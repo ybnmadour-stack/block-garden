@@ -42,6 +42,7 @@ function applyPreferences() {
 }
 function showScreen(nextScreen) {
   screen = nextScreen;
+  document.documentElement.dataset.screen = screen;
   document.querySelector('#home-screen').hidden = screen !== 'home';
   document.querySelector('#play-screen').hidden = screen !== 'play';
   document.querySelector('#home-button').hidden = screen === 'home';

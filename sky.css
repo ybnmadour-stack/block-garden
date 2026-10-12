@@ -137,3 +137,71 @@ dialog button {
 [data-theme="starlight"] .setting-row select { background:#172645; color:#e2ecff; border-color:#b7cfff40; }
 [data-theme="starlight"] :focus-visible { outline-color:#b3ccff; }
 @media(prefers-reduced-motion:reduce) { .mode-card { transition:none; } .mode-card:hover { transform:none; } }
+html { min-height:100%; }
+body { overflow-x:hidden; }
+dialog { max-height:calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overflow-y:auto; }
+button,select,input { touch-action:manipulation; }
+.piece,#board { touch-action:none; }
+@media(max-width:600px) {
+  .game { padding:calc(10px + env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)); }
+  header .eyebrow { font-size:8px; letter-spacing:2px; }
+  h1 { font-size:29px; margin:6px 0; }
+  header p { margin-bottom:12px; font-size:12px; }
+  .navigation { margin-bottom:10px; }
+  .navigation button { min-height:44px; padding:8px 14px; }
+  .home-art { height:54px; }
+  .home-art span:nth-child(2) { font-size:46px; }
+  #home-title { font-size:23px; margin:9px 0 6px; }
+  .home-description { margin:6px 0 14px; }
+  .difficulty-picker { padding:12px 14px; margin-bottom:12px; }
+  .difficulty-picker select { min-height:38px; }
+  .difficulty-picker p { padding-top:8px; font-size:11px; }
+  .mode-card { padding:15px 17px; margin-bottom:10px; gap:4px 10px; }
+  .mode-card strong { font-size:16px; }
+  .mode-card small { margin-top:3px; }
+  .home-note { margin:8px 0; font-size:10px; }
+  [data-screen="play"] header .eyebrow,[data-screen="play"] header p { display:none; }
+  [data-screen="play"] h1 { font-size:26px; margin:0 0 5px; }
+  .scores { padding:8px 14px; gap:24px; }
+  .scores strong { font-size:23px; }
+  .scores button { min-width:44px; height:44px; }
+  .mode-bar { padding:7px 12px; margin-top:8px; min-height:36px; }
+  #timer { font-size:21px; }
+  #status { margin:7px 0; min-height:30px; font-size:11px; line-height:1.4; }
+  #board { width:min(100%,max(160px,calc(100dvh - 390px - env(safe-area-inset-top) - env(safe-area-inset-bottom)))); margin-inline:auto; }
+  #tray { margin-top:10px; min-height:76px; gap:8px; }
+  .piece { min-height:76px; padding:6px; min-width:0; }
+  .mini { width:clamp(10px,3.6vw,16px); height:clamp(10px,3.6vw,16px); }
+  footer { margin-top:8px; font-size:11px; line-height:1.4; }
+  footer span { display:none; }
+  #settings { padding:20px; }
+  .setting-row { padding:14px 0; }
+  .setting-row select { min-height:44px; max-width:132px; }
+}
+@media(orientation:landscape) and (max-height:600px) {
+  .game { width:min(100%,850px); padding:calc(6px + env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)); }
+  [data-screen="play"] .game { display:grid; grid-template-columns:1fr auto; gap:6px 15px; }
+  [data-screen="play"] header .eyebrow,[data-screen="play"] header p { display:none; }
+  [data-screen="play"] h1 { font-size:24px; margin:5px 0; text-align:left; }
+  [data-screen="play"] .navigation { margin:0; align-items:center; }
+  [data-screen="play"] .navigation button { min-height:38px; }
+  #play-screen { grid-column:1 / -1; display:grid; grid-template-columns:minmax(0,1fr) 210px; gap:6px 14px; align-items:start; }
+  #board { grid-column:1; grid-row:1 / 5; width:min(100%,calc(100dvh - 75px - env(safe-area-inset-top) - env(safe-area-inset-bottom))); margin:auto; }
+  .scores { grid-column:2; grid-row:1; padding:6px 10px; gap:12px; }
+  .scores strong { font-size:20px; }
+  .scores span { font-size:8px; letter-spacing:.5px; }
+  .scores button { width:36px; height:36px; }
+  .mode-bar { grid-column:2; grid-row:2; margin:0; padding:6px 9px; font-size:11px; }
+  #status { grid-column:2; grid-row:3; margin:0; min-height:28px; font-size:10px; }
+  #tray { grid-column:2; grid-row:4; margin:0; gap:5px; min-height:68px; }
+  .piece { padding:4px; min-height:68px; min-width:0; }
+  .mini { width:8px; height:8px; }
+  #play-screen footer { display:none; }
+}
+@media(max-width:600px) and (max-height:740px) {
+  [data-screen="home"] header .eyebrow,[data-screen="home"] header p,.home-art,.home-description,.home-note,#home-screen > .eyebrow { display:none; }
+  #home-title { font-size:21px; margin:8px 0 14px; }
+  .mode-card { padding:12px 15px; gap:3px 8px; }
+  .mode-card > span:not(.mode-icon),.mode-card small { font-size:11px; }
+  .difficulty-picker { padding:10px 12px; margin-bottom:10px; }
+}
