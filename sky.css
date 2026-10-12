@@ -57,3 +57,12 @@ dialog button {
   box-shadow: inset 0 1px 0 #ffffff80, 0 6px 14px #267bc433;
 }
 :focus-visible { outline-color: #145e9c; }
+.drag-ghost {
+  position: fixed;
+  z-index: 1000;
+  pointer-events: none;
+  gap: 5px;
+  opacity: .92;
+  filter: drop-shadow(0 8px 10px #174c7855);
+}
+.drag-ghost .mini { border-radius: 7px; }

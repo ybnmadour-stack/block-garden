@@ -13,6 +13,14 @@ let gesture = null;
 let clearing = false;
 let gameVersion = 0;
 let clearAnimations = [];
+let dragGhost = null;
+let suppressClick = false;
+document.addEventListener('click',event => {
+  if (!suppressClick) return;
+  suppressClick = false;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+},true);
 try { best = Number(localStorage.getItem('block-garden-best')) || 0; } catch {}
 function refill() {
   pieces = Array.from({length:3},() => ({shape:SHAPES[Math.floor(Math.random() * SHAPES.length)],color:colors[Math.floor(Math.random() * colors.length)]}));
@@ -49,8 +57,10 @@ function render() {
       button.append(grid);
       button.addEventListener('click',() => select(index));
       button.addEventListener('pointerdown',event => {
-        if (clearing || event.button !== 0) return;
-        gesture = {index,startX:event.clientX,startY:event.clientY,moved:false};
+        if (clearing || gesture || event.button !== 0) return;
+        suppressClick = false;
+        button.setPointerCapture(event.pointerId);
+        gesture = {index,pointerId:event.pointerId,startX:event.clientX,startY:event.clientY,moved:false,grid,offset:event.pointerType === 'touch' ? 65 : 0};
       });
     }
     return button;
@@ -67,6 +77,25 @@ function select(index) {
 function clearPreview() {
   for (const cell of boardElement.children) cell.classList.remove('preview','invalid','blocked');
 }
+function removeGhost() {
+  dragGhost?.remove();
+  dragGhost = null;
+}
+function moveGhost(event) {
+  const size = boardElement.children[0].getBoundingClientRect().width;
+  if (!dragGhost) {
+    dragGhost = gesture.grid.cloneNode(true);
+    dragGhost.classList.add('drag-ghost');
+    dragGhost.setAttribute('aria-hidden','true');
+    for (const cell of dragGhost.children) {
+      cell.style.width = `${size}px`;
+      cell.style.height = `${size}px`;
+    }
+    document.body.append(dragGhost);
+  }
+  dragGhost.style.left = `${event.clientX - size / 2}px`;
+  dragGhost.style.top = `${event.clientY - gesture.offset - size / 2}px`;
+}
 function cellAt(clientX,clientY) {
   const bounds = boardElement.getBoundingClientRect();
   const column = Math.floor((clientX - bounds.left - 10) / ((bounds.width - 20 + 5) / SIZE));
@@ -74,12 +103,13 @@ function cellAt(clientX,clientY) {
   return row >= 0 && row < SIZE && column >= 0 && column < SIZE ? row * SIZE + column : null;
 }
 document.addEventListener('pointermove',event => {
-  if (!gesture) return;
+  if (!gesture || event.pointerId !== gesture.pointerId) return;
   if (Math.hypot(event.clientX - gesture.startX,event.clientY - gesture.startY) > 7) gesture.moved = true;
   if (!gesture.moved) return;
+  moveGhost(event);
   selected = gesture.index;
   clearPreview();
-  const index = cellAt(event.clientX,event.clientY);
+  const index = cellAt(event.clientX,event.clientY - gesture.offset);
   if (index === null) return;
   const row = Math.floor(index / SIZE);
   const column = index % SIZE;
@@ -96,19 +126,22 @@ document.addEventListener('pointermove',event => {
   }
 });
 document.addEventListener('pointerup',event => {
-  if (!gesture) return;
+  if (!gesture || event.pointerId !== gesture.pointerId) return;
   const dragged = gesture.moved;
+  const offset = gesture.offset;
   selected = gesture.index;
   gesture = null;
+  removeGhost();
   clearPreview();
   if (dragged) {
     event.preventDefault();
-    const index = cellAt(event.clientX,event.clientY);
+    suppressClick = true;
+    const index = cellAt(event.clientX,event.clientY - offset);
     if (index !== null) drop(index);
     else render();
   }
 });
-document.addEventListener('pointercancel',() => { gesture = null; clearPreview(); });
+document.addEventListener('pointercancel',() => { gesture = null; removeGhost(); clearPreview(); });
 async function drop(index) {
   if (clearing) return;
   if (selected === null || !pieces[selected]) { statusElement.textContent = 'Choose one of the blocks below first.'; return; }
@@ -130,6 +163,7 @@ async function drop(index) {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     clearAnimations = result.cleared.map((cellIndex,order) => {
       const cell = boardElement.children[cellIndex];
+      cell.style.backgroundImage = 'none';
       return cell.animate(reducedMotion ? [
         {backgroundColor:'#ffe59a'},
         {backgroundColor:'#ffe59a'}
@@ -138,7 +172,7 @@ async function drop(index) {
         {backgroundColor:'#ffe59a',transform:'scale(1.08)',opacity:1,offset:0.3},
         {backgroundColor:'#f9c65c',transform:'scale(1)',opacity:1,offset:0.55},
         {backgroundColor:'#f9c65c',transform:'scale(0.15)',opacity:0,offset:1}
-      ],{duration:reducedMotion ? 180 : 520,delay:reducedMotion ? 0 : order * 14,easing:'ease-in-out',fill:'forwards'});
+      ],{duration:reducedMotion ? 350 : 800,delay:reducedMotion ? 0 : order * 18,easing:'ease-in-out',fill:'forwards'});
     });
     await Promise.all(clearAnimations.map(animation => animation.finished.catch(() => {})));
     if (version !== gameVersion) return;
@@ -155,6 +189,7 @@ async function drop(index) {
   }
 }
 function restart() {
+  removeGhost();
   gameVersion++;
   for (const animation of clearAnimations) animation.cancel();
   clearAnimations = [];
@@ -171,4 +206,9 @@ function restart() {
 document.querySelector('#restart').addEventListener('click',restart);
 document.querySelector('#again').addEventListener('click',restart);
 restart();
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange',() => {
+    statusElement.textContent = 'Update ready! Refresh once to load the latest game.';
+  });
+  navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(registration => registration.update()).catch(() => {});
+}
