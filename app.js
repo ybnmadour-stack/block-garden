@@ -1,5 +1,5 @@
 import {SIZE,SHAPES,fits,canPlay,place} from './engine.js';
-const colors = ['#91b887','#dfb573','#8cbfba','#c591a1','#a5a0d1'];
+const colors = ['#42a5ed','#75c8f5','#648fe0','#5bb5db','#9aacf0'];
 const boardElement = document.querySelector('#board');
 const trayElement = document.querySelector('#tray');
 const statusElement = document.querySelector('#status');
